@@ -8,10 +8,59 @@ output:
 
 ## Loading and preprocessing the data
 
+```{r reader, echo = TRUE}
+#
+# start by ensuring necessary packages available
+#
 
+if (!"dplyr" %in% installed.packages()) {
+  install.packages("dplyr")
+}
+library(dplyr)
+
+if (!"lubridate" %in% installed.packages()) {
+  install.packages("lubridate")
+}
+library(lubridate)
+
+if (!"ggplot2" %in% installed.packages()) {
+  install.packages("ggplot2")
+}
+library(ggplot2)
+
+#
+# get local copy of zip file & rename/mutate field called date
+# to eliminate worries re reserved words or data type
+#
+
+print("preparing input file ...")
+fileName <- "./activity.zip"
+fileUrl = "https://github.com/rdpeng/RepData_PeerAssessment1/blob/master/activity.zip"
+if(!file.exists(fileName)) {
+    download.file(fileUrl, "./activity.zip", method = "curl")
+}
+
+unzfileName <- "./activity.csv"
+if(!file.exists(unzfileName)) {
+    unzip("./activity.zip", files = "activity.csv")
+}
+
+acts <- read.csv(unzfileName, sep = ",")
+acts <- acts %>% rename(sdate = date) %>% mutate(ddate = as.Date(sdate))
+
+head(acts, n = 10L)
+```
 
 ## What is mean total number of steps taken per day?
 
+```{r histogramit, echo = TRUE}
+print("setting up histogram ...")
+grp_acts <- acts %>% group_by(ddate) %>% summarise(nrecs = n(), totsteps = sum(steps), mnsteps = mean(steps), mdsteps = median(steps))
+theme_update(plot.title = element_text(hjust = 0.5))
+hg <- ggplot(na.omit(grp_acts), aes(x = ddate, y = totsteps))
+hg <- hg + geom_point(color = "blue", size = 2) + geom_line(color = "blue") + labs(title = "Daily Steps", x = "Step Date", y = "Nr of Steps")
+print(hg)
+```
 
 
 ## What is the average daily activity pattern?
