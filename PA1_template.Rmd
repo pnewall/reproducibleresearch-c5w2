@@ -9,6 +9,7 @@ output:
 ## Loading and preprocessing the data
 
 ```{r reader, echo = TRUE}
+
 #
 # start by ensuring necessary packages available
 #
@@ -27,6 +28,11 @@ if (!"ggplot2" %in% installed.packages()) {
   install.packages("ggplot2")
 }
 library(ggplot2)
+
+if (!"xtable" %in% installed.packages()) {
+  install.packages("xtable")
+}
+library(xtable)
 
 #
 # get local copy of zip file & rename/mutate field called date
@@ -48,20 +54,49 @@ if(!file.exists(unzfileName)) {
 acts <- read.csv(unzfileName, sep = ",")
 acts <- acts %>% rename(sdate = date) %>% mutate(ddate = as.Date(sdate))
 
-head(acts, n = 10L)
+grp_acts <- acts %>% group_by(ddate) %>% summarise(nrecs = n(), totsteps = sum(steps), mnsteps = mean(steps), mdsteps = median(steps))
+
+#
+# median functions works badly here owing to large nr of 
+# zero values so further data manipulation below to re-do 
+# the median calculation only on non-zero values 
+#
+
+med_acts <- acts %>% filter(steps != 0) %>% group_by(ddate)
+act_meds <- with(med_acts, tapply(steps, ddate, median, na.rm = TRUE))
+df_act_meds <- data.frame(adate = names(act_meds), median_steps = act_meds)
+df_act_meds <- mutate(df_act_meds, tdate = as.Date(adate))
+grp_med_acts <- merge(grp_acts, df_act_meds, by.x = "ddate", by.y = "tdate", all = TRUE)
+grp_med_acts <- grp_med_acts %>% select(ddate:mnsteps, median_steps)
+
 ```
 
 ## What is mean total number of steps taken per day?
 
-```{r histogramit, echo = TRUE}
+```{r hgram, echo = TRUE, results = "asis"}
 print("setting up histogram ...")
-grp_acts <- acts %>% group_by(ddate) %>% summarise(nrecs = n(), totsteps = sum(steps), mnsteps = mean(steps), mdsteps = median(steps))
-theme_update(plot.title = element_text(hjust = 0.5))
-hg <- ggplot(na.omit(grp_acts), aes(x = ddate, y = totsteps))
-hg <- hg + geom_point(color = "blue", size = 2) + geom_line(color = "blue") + labs(title = "Daily Steps", x = "Step Date", y = "Nr of Steps")
-print(hg)
-```
 
+theme_update(plot.title = element_text(hjust = 0.5))
+hg <- ggplot(na.omit(grp_med_acts), aes(x = ddate, y = totsteps))
+hg <- hg + geom_point(color = "blue", size = 2) + geom_line(color = "blue") + labs(title = "Total Daily Steps", x = "Step Date", y = "Nr of Steps")
+print(hg)
+
+print ("Chart showing mean nr of steps taken each day")
+hg2 <- ggplot(na.omit(grp_med_acts), aes(x = ddate, y = mnsteps))
+hg2 <- hg2 + geom_point(color = "blue", size = 2) + geom_line(color = "blue") + labs(title = "Mean Daily Steps", x = "Step Date", y = "Mean Nr of Steps")
+print(hg2)
+
+print ("Chart showing medians of non-zero values of steps taken each day")
+hg3 <- ggplot(na.omit(grp_med_acts), aes(x = ddate, y = median_steps))
+hg3 <- hg3 + geom_point(color = "blue", size = 2) + geom_line(color = "blue") + labs(title = "Median of Non-Zero Daily Steps", x = "Step Date", y = "Median Nr of Steps")
+print(hg3)
+
+omean <- format(mean(grp_med_acts$totsteps, na.rm = TRUE), digits = 2)
+omedian <- median(grp_med_acts$totsteps, na.rm = TRUE)
+```
+### The mean of the total daily steps for the entire period is `r omean`
+###
+### The median of the total daily steps for the entire period is `r omedian`
 
 ## What is the average daily activity pattern?
 
