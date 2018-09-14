@@ -100,7 +100,21 @@ omedian <- median(grp_med_acts$totsteps, na.rm = TRUE)
 
 ## What is the average daily activity pattern?
 
+```{r maxdap, echo = TRUE}
+grp_int_acts <- acts %>% filter(!is.na(steps)) %>% group_by(interval) %>% summarise(nrecs = n(), totsteps = sum(steps, na.rm = TRUE), mnsteps = mean(steps, na.rm = TRUE))
 
+print ("Chart showing average steps by interval")
+hg4 <- ggplot(grp_int_acts, aes(x = interval, y = mnsteps))
+hg4 <- hg4 + geom_point(color = "red") + geom_line(color = "blue") + labs(title = "Average Steps taken by Interval", x = "Interval", y = "Average Steps")
+print(hg4)
+
+max_int_acts <- filter(grp_int_acts, mnsteps == max(mnsteps))
+max_int <- max_int_acts$interval
+max_mnsteps <- max_int_acts$mnsteps
+```
+### The interval with the highest average daily steps is `r max_int`
+###
+### The highest average daily step value is `r max_mnsteps`
 
 ## Imputing missing values
 
