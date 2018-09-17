@@ -104,14 +104,28 @@ hg3 <- ggplot(na.omit(grp_med_acts), aes(x = ddate, y = median_steps))
 hg3 <- hg3 + geom_point(color = "blue", size = 2) + geom_line(color = "blue") + labs(title = "Median of Non-Zero Daily Steps", x = "Step Date", y = "Median Nr of Steps")
 print(hg3)
 
-omean <- format(mean(grp_med_acts$totsteps, na.rm = TRUE), digits = 2)
-omedian <- median(grp_med_acts$totsteps, na.rm = TRUE)
+omean <- format(mean(acts$steps, na.rm = TRUE), digits = 2)
+omedian <- median(acts$steps, na.rm = TRUE)
+
+#
+# exclude NA & zero values from the acts data frame 
+# to be able to calculate a more useful median
+#
+
+zero_acts <- acts[acts$steps == 0, ]
+nzero_acts <- format(nrow(zero_acts), big.mark=",")
+xacts <- acts[acts$steps != 0 & !(is.na(acts$steps)), ]
+xmedian <- median(xacts$steps)
 
 ```
 
-### The mean of the total daily steps for the entire period is `r omean`
+#### The mean of the total daily steps for the entire period - with missing values included - is `r omean`
 
-### The median of the total daily steps for the entire period is `r omedian`
+#### The activity dataset comprises 17,568 observations, of which `r nzero_acts` hold zero values for the steps variable
+
+#### So the median of the total daily steps for the entire period - with missing values & zero values included - is `r omedian`
+
+#### The median of the total daily steps for the entire period - with missing values & zero values excluded - is `r xmedian`
 
 ## What is the average daily activity pattern?
 
@@ -130,9 +144,9 @@ max_mnsteps <- max_int_acts$mnsteps
 
 ```
 
-### The interval with the highest average daily steps is `r max_int`
+#### The interval with the highest average daily steps is `r max_int`
 
-### The highest average daily step value is `r max_mnsteps`
+#### The highest average daily step value is `r max_mnsteps`
 
 ## Imputing missing values
 
@@ -141,7 +155,7 @@ nrna <- nrow(acts[is.na(acts$steps), ])
 
 ```
 
-### The total number of missing values in the dataset is `r max_mnsteps`
+#### The total number of missing values in the dataset is `r nrna`
 
 ```{r imputer, echo = TRUE}
 
@@ -156,12 +170,35 @@ imp_acts <- imp_acts %>% select(-(sdate), -(nrecs:totsteps)) %>%
 grp_imp_acts <- group_by(imp_acts, ddate) %>% 
     summarise(nrecs = n(), totsteps = sum(imp_steps), mn_impsteps = mean(imp_steps))
 
-print ("Chart showing total daily steps with imputed NA's")
+print ("Chart showing total daily steps with imputed values for NA's")
 hg5 <- ggplot(grp_imp_acts, aes(x = ddate, y = totsteps))
-hg5 <- hg5 + geom_point(color = "blue", size = 2) + geom_line(color = "blue") + labs(title = "Total Daily Steps with Imputed NA's", x = "Date", y = "Total Steps")
+hg5 <- hg5 + geom_point(color = "blue", size = 2) + geom_line(color = "blue") + labs(title = "Total Daily Steps with Imputed Values for NA's", x = "Date", y = "Total Steps")
 print(hg5)
 
+imean <- format(mean(imp_acts$imp_steps, na.rm = TRUE), digits = 2)
+imedian <- median(imp_acts$imp_steps, na.rm = TRUE)
+ximp_acts <- imp_acts[imp_acts$steps != 0 & !(is.na(imp_acts$steps)), ]
+ximedian <- median(ximp_acts$imp_steps)
+
+ototal <- format(sum(acts$steps, na.rm = TRUE), big.mark = ",")
+itotal <- format(sum(imp_acts$imp_steps, na.rm = TRUE), big.mark = ",")
+oidiff <- format(sum(acts$steps, na.rm = TRUE) - sum(imp_acts$imp_steps, na.rm = TRUE), big.mark = ",")
+
 ```
+
+#### The mean number of steps taken each day with imputed values for NA's is `r imean`
+
+#### The median number of steps taken each day with imputed values for NA's is `r imedian`
+
+#### The median number of steps taken each day with imputed values for NA's & zero values excluded is `r ximedian`
+
+#### The total daily number of steps recorded in the raw data set is `r ototal`
+
+#### The total daily number of steps recorded in the data set with imputed values is `r itotal`
+
+#### So the difference from imputing values on the basis of the interval average is `r oidiff` 
+
+#### BUT the mean & median values of the two datasets remain the same
 
 
 ## Are there differences in activity patterns between weekdays and weekends?
